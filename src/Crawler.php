@@ -103,19 +103,10 @@ class Crawler
                 ->xpath('//n:contentMeta/n:located[@type="cptype:city"]/n:name[@xml:lang="tr"]')[0];
         }
         $news->images = [];
-		for($i=0;$i<20;$i++){
-			if (isset($xml->xpath('//n:newsItem/n:itemMeta/n:link[@rel="irel:seeAlso"]')[$i]['residref'])) {
-				$picture_id = (string)$xml->xpath('//n:newsItem/n:itemMeta/n:link[@rel="irel:seeAlso"]')[$i]['residref'];
-				if(strpos($picture_id, 'picture')){
-					$news->images[] = $this->getDocumentLink($picture_id, 'print');
-					$pic = $this->fetchUrl($this->getDocumentLink($picture_id, 'print'), 'GET', ['auth' => $this->auth]);
-					file_put_contents('img/'.rand(1000, 9999).".jpg", $pic);
-				}
-				elseif(strpos($picture_id, 'video')){
-					$news->videos[] = $this->getDocumentLink($picture_id, 'web');
-				}
-			}
-		}
+        if (isset($xml->xpath('//n:newsItem/n:itemMeta/n:link[@rel="irel:seeAlso"]')[0]['residref'])) {
+            $picture_id = (string)$xml->xpath('//n:newsItem/n:itemMeta/n:link[@rel="irel:seeAlso"]')[0]['residref'];
+            $news->images[] = $this->getDocumentLink($picture_id, 'print');
+        }
         return $news;
     }
 
@@ -140,7 +131,10 @@ class Crawler
         $xml = null;
         $url = self::API_BASE_URL . '/abone/document/' . $id . '/newsml29?v=2' . rand(1000, 9999);
         $newsml = $this->fetchUrl($url, 'GET', ['auth' => $this->auth]);
-        $xml = simplexml_load_string($newsml);
+
+        if (!empty($newsml)) {
+            $xml = simplexml_load_string($newsml);
+        }
         return $xml;
     }
 
@@ -229,11 +223,14 @@ class Crawler
     protected function fetchUrl($url, $method = 'GET', $options = [])
     {
         $client = new GuzzleHttp\Client();
-        $res = $client->request($method, $url, $options);
-        if ($res->getStatusCode() == 200) {
-            return (string)$res->getBody();
+        try {
+            $res = $client->request($method, $url, $options);
+            if ($res->getStatusCode() == 200) {
+                return (string)$res->getBody();
+            }
+        } catch (\GuzzleHttp\Exception\ClientException $exception) {
+            return '';
         }
-        return '';
     }
 
     /**
