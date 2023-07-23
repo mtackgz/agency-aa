@@ -140,10 +140,7 @@ class Crawler
         $xml = null;
         $url = self::API_BASE_URL . '/abone/document/' . $id . '/newsml29?v=2' . rand(1000, 9999);
         $newsml = $this->fetchUrl($url, 'GET', ['auth' => $this->auth]);
-
-        if (!empty($newsml)) {
-            $xml = simplexml_load_string($newsml);
-        }
+        $xml = simplexml_load_string($newsml);
         return $xml;
     }
 
@@ -232,14 +229,11 @@ class Crawler
     protected function fetchUrl($url, $method = 'GET', $options = [])
     {
         $client = new GuzzleHttp\Client();
-        try {
-            $res = $client->request($method, $url, $options);
-            if ($res->getStatusCode() == 200) {
-                return (string)$res->getBody();
-            }
-        } catch (\GuzzleHttp\Exception\ClientException $exception) {
-            return '';
+        $res = $client->request($method, $url, $options);
+        if ($res->getStatusCode() == 200) {
+            return (string)$res->getBody();
         }
+        return '';
     }
 
     /**
